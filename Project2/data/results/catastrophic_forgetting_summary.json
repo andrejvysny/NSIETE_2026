@@ -1,0 +1,7 @@
+{
+  "n_queries": 30,
+  "mean_rank_shift": 6.433333333333334,
+  "median_rank_shift": 1.0,
+  "max_rank_shift": 49,
+  "frac_unchanged_top1": 0.4
+}

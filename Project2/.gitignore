@@ -1,0 +1,39 @@
+# Data & models -- ignore everything under data/ except small results files
+data/*
+!data/results/
+data/results/*
+!data/results/*.json
+!data/results/*.png
+flickr30k/
+*.npy
+*.pt
+*.pth
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Env
+.env
+
+# Safetensors / model adapters
+*.safetensors
+
+# WandB local run artifacts
+wandb/
+
+# nbconvert tee logs
+notebooks/*_run.log
