@@ -11,6 +11,9 @@ EMBEDDINGS_DIR = DATA_DIR / "embeddings"
 MODELS_DIR = DATA_DIR / "models"
 RESULTS_DIR = DATA_DIR / "results"
 
+for _d in (EMBEDDINGS_DIR, MODELS_DIR, RESULTS_DIR):
+    _d.mkdir(parents=True, exist_ok=True)
+
 # CLIP model identifiers
 CLIP_MODELS = {
     "clip-vit-b-32": "openai/clip-vit-base-patch32",
