@@ -304,6 +304,47 @@ def training_step(
     return loss, metrics
 
 
+class EarlyStopping:
+    """Tracks a monitored metric and reports when training should halt.
+
+    `mode='max'` for retrieval scores (R@1), `'min'` for loss-like metrics.
+    The notebook keeps the training loop; this just owns the bookkeeping.
+    """
+
+    def __init__(
+        self,
+        patience: int = 10,
+        min_delta: float = 0.0,
+        mode: str = "max",
+    ) -> None:
+        if mode not in ("max", "min"):
+            raise ValueError(f"mode must be 'max' or 'min', got {mode!r}")
+        self.patience = patience
+        self.min_delta = min_delta
+        self.mode = mode
+        self.best: float = -float("inf") if mode == "max" else float("inf")
+        self.best_epoch: int = -1
+        self.counter: int = 0
+
+    def update(self, value: float, epoch: int) -> bool:
+        """Record a new value. Returns True if it's a new best."""
+        if self.mode == "max":
+            improved = value > self.best + self.min_delta
+        else:
+            improved = value < self.best - self.min_delta
+        if improved:
+            self.best = value
+            self.best_epoch = epoch
+            self.counter = 0
+            return True
+        self.counter += 1
+        return False
+
+    @property
+    def should_stop(self) -> bool:
+        return self.counter >= self.patience
+
+
 def save_checkpoint(
     model: nn.Module,
     optimizer: torch.optim.Optimizer,
