@@ -68,36 +68,23 @@ def evaluate_image_to_text(
     image_indices: np.ndarray,
     k_values: list[int] | None = None,
 ) -> dict[str, float]:
-    """Image-to-text retrieval evaluation (symmetric).
+    """Image-to-text retrieval evaluation (symmetric direction of t2i).
 
-    For each unique image, find the rank of its captions among all captions.
-
-    Args:
-        image_embeddings: (N, 512) -- gallery images (unique)
-        text_embeddings: (Q, 512) -- all captions
-        image_indices: (Q,) -- which image each caption belongs to
-        k_values: [1, 5, 10] typically
-
-    Returns:
-        Dict with R@K, MedianR, MeanR for image-to-text direction.
+    For each image, find the rank of its best matching caption among all captions.
     """
     if k_values is None:
         k_values = TOP_K_VALUES
 
-    # (N, Q) similarity matrix
-    scores = image_embeddings @ text_embeddings.T
+    scores = image_embeddings @ text_embeddings.T  # (N, Q)
     n_images = len(image_embeddings)
 
     ranks_list = []
     for img_idx in range(n_images):
-        img_scores = scores[img_idx]  # (Q,)
-        # Find captions belonging to this image
+        img_scores = scores[img_idx]
         caption_mask = image_indices == img_idx
         if not caption_mask.any():
             continue
-        # Best rank among this image's captions
-        caption_scores = img_scores[caption_mask]
-        best_caption_score = caption_scores.max()
+        best_caption_score = img_scores[caption_mask].max()
         rank = int((img_scores > best_caption_score).sum())
         ranks_list.append(rank)
 
@@ -108,25 +95,6 @@ def evaluate_image_to_text(
         results[f"R@{k}"] = recall_at_k(ranks, k)
     results["MedianR"] = median_rank(ranks)
     results["MeanR"] = mean_rank(ranks)
-
-    return results
-
-
-def random_baseline(
-    n_queries: int,
-    n_gallery: int,
-    k_values: list[int] | None = None,
-    seed: int = 42,
-) -> dict[str, float]:
-    """Random retrieval baseline: expected Recall@K = K/N."""
-    if k_values is None:
-        k_values = TOP_K_VALUES
-
-    results = {}
-    for k in k_values:
-        results[f"R@{k}"] = min(k / n_gallery, 1.0)
-    results["MedianR"] = float(n_gallery / 2)
-    results["MeanR"] = float((n_gallery + 1) / 2)
     return results
 
 

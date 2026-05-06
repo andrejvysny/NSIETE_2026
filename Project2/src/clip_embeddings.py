@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import torch
@@ -21,7 +21,7 @@ def _ensure_rgb(img: Image.Image) -> Image.Image:
 
 def load_clip_model(
     model_key: str = "clip-vit-b-32",
-    device: Optional[torch.device] = None,
+    device: torch.device | None = None,
 ) -> tuple[CLIPModel, CLIPProcessor]:
     """Load a CLIP model and processor.
 
@@ -47,7 +47,7 @@ class _ProjectionWrappedCLIP(nn.Module):
     """Wraps a base CLIP model + image/text projection heads.
 
     Exposes ``get_image_features`` and ``get_text_features`` so callers
-    (encode_images / encode_texts / encode_single_text) work unchanged.
+    (encode_images / encode_texts) work unchanged.
     """
 
     def __init__(
@@ -72,7 +72,7 @@ class _ProjectionWrappedCLIP(nn.Module):
 
 def load_finetuned_model(
     model_name: str,
-    device: Optional[torch.device] = None,
+    device: torch.device | None = None,
 ) -> tuple[Any, CLIPProcessor, str]:
     """Resolve a model name to (model, processor, kind).
 
@@ -129,7 +129,7 @@ def load_finetuned_model(
         return base, processor, "full"
 
     if model_name.startswith("scratch_vit_") or model_name.startswith("scratch_cnn_"):
-        from src.scratch_model import build_vit_dual, build_cnn_dual
+        from src.scratch_model import build_cnn_dual, build_vit_dual
         from src.scratch_tokenizer import load_tokenizer
 
         model_dir = MODELS_DIR / model_name
@@ -147,52 +147,12 @@ def load_finetuned_model(
         ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
         model.load_state_dict(ckpt["model_state_dict"])
         model = model.to(device).eval()
-        # The scratch model doesn't need a CLIPProcessor for image preprocessing,
-        # but callers expect a 2-tuple (model, processor). Returning the tokenizer
-        # here would break the tuple shape. Use a small carrier struct: we stash
-        # the tokenizer on the model so encode_single_text_tokenized can grab it.
         model._scratch_tokenizer = tokenizer  # type: ignore[attr-defined]
         kind = "scratch_vit" if model_name.startswith("scratch_vit_") else "scratch_cnn"
         # processor=None is a sentinel: callers must use scratch encoding helpers.
         return model, None, kind
 
     raise ValueError(f"Unknown model name: {model_name!r}")
-
-
-def has_finetuned_checkpoint(model_name: str) -> bool:
-    """Cheap check: does the on-disk artifact for this fine-tuned model exist?"""
-    if model_name in CLIP_MODELS:
-        return True
-    paths = {
-        "projection_b32": MODELS_DIR / "projection_head" / "best_projection.pt",
-        "lora_b32": MODELS_DIR / "lora_clip" / "best",
-        "full_b32": MODELS_DIR / "full_finetune" / "best_full_finetune.pt",
-        "scratch_vit_word": MODELS_DIR / "scratch_vit_word" / "best.pt",
-        "scratch_vit_bpe": MODELS_DIR / "scratch_vit_bpe" / "best.pt",
-        "scratch_cnn_word": MODELS_DIR / "scratch_cnn_word" / "best.pt",
-        "scratch_cnn_bpe": MODELS_DIR / "scratch_cnn_bpe" / "best.pt",
-    }
-    p = paths.get(model_name)
-    return p is not None and p.exists()
-
-
-def encode_single_text_tokenized(
-    text: str,
-    model: torch.nn.Module,
-    tokenizer,
-    device: Optional[torch.device] = None,
-) -> np.ndarray:
-    """Encode a single text query for from-scratch DualEncoder models."""
-    if device is None:
-        device = next(model.parameters()).device
-    toks = tokenizer.tokenize([text])
-    input_ids = toks["input_ids"].to(device)
-    attention_mask = toks["attention_mask"].to(device)
-    with torch.no_grad():
-        out = model.get_text_features(input_ids=input_ids, attention_mask=attention_mask)
-    arr = out.float().cpu().numpy()[0]
-    norm = max(np.linalg.norm(arr), 1e-8)
-    return (arr / norm).astype(np.float32)
 
 
 # ─── Image encoding ───
@@ -203,7 +163,7 @@ def encode_images(
     model: CLIPModel,
     processor: CLIPProcessor,
     batch_size: int = BATCH_SIZE,
-    device: Optional[torch.device] = None,
+    device: torch.device | None = None,
 ) -> np.ndarray:
     """Encode all images in dataset with CLIP image encoder.
 
@@ -239,7 +199,7 @@ def encode_texts(
     model: CLIPModel,
     processor: CLIPProcessor,
     batch_size: int = BATCH_SIZE,
-    device: Optional[torch.device] = None,
+    device: torch.device | None = None,
 ) -> np.ndarray:
     """Encode text queries with CLIP text encoder.
 
@@ -276,36 +236,6 @@ def encode_texts(
 
     embeddings = np.concatenate(all_embeddings, axis=0)  # (Q, 512)
     return _l2_normalize(embeddings)
-
-
-def encode_single_text(
-    text: str,
-    model: CLIPModel,
-    processor: CLIPProcessor,
-    device: Optional[torch.device] = None,
-) -> np.ndarray:
-    """Encode a single text query. Returns (512,) L2-normalized vector."""
-    if device is None:
-        device = next(model.parameters()).device
-
-    inputs = processor(
-        text=[text],
-        return_tensors="pt",
-        padding=True,
-        truncation=True,
-        max_length=77,
-    ).to(device)
-
-    with torch.no_grad():
-        features = model.get_text_features(
-            input_ids=inputs["input_ids"],
-            attention_mask=inputs["attention_mask"],
-        )
-    if hasattr(features, "pooler_output"):
-        features = features.pooler_output
-
-    emb = features.cpu().numpy()[0]  # (512,)
-    return emb / max(np.linalg.norm(emb), 1e-8)
 
 
 # ─── Normalization ───

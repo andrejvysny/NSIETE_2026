@@ -15,7 +15,6 @@ dependencies = [
     "tqdm>=4.66",
     "jupyter>=1.0",
     "ipywidgets>=8.1",
-    "streamlit>=1.30",
     "python-dotenv>=1.2.2",
     "peft>=0.7",
     "pandas>=2.1",
@@ -24,3 +23,18 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["ruff>=0.1", "mypy>=1.8"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP"]
+ignore = [
+    "E501",  # line length is enforced by ruff format
+    "B008",  # ok to use function calls in default arg defaults (e.g. Path)
+    "UP007", # keep Optional[X] over X | None for clarity in older PyTorch idioms
+]
+
+[tool.ruff.lint.per-file-ignores]
+"notebooks/*" = ["F401", "F841", "E402"]

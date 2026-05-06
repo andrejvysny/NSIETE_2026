@@ -1,18 +1,14 @@
 # Flickr30k Text-to-Image Retrieval
 
-Text-to-image retrieval system using CLIP on the Flickr30k dataset. Given a text query, retrieves the most relevant images from the gallery using cosine similarity in CLIP's joint embedding space.
+Text-to-image retrieval on Flickr30k (Karpathy split). Five approach families compared:
 
-## Approach
+1. Zero-shot CLIP (ViT-B/32, ViT-B/16)
+2. Projection head on frozen CLIP B/32
+3. Full CLIP fine-tune
+4. LoRA r=8 on `q_proj`/`v_proj`
+5. From-scratch dual encoders — ViT or ResNet18+BiLSTM × word or BPE tokenizer
 
-1. **Baseline**: Zero-shot CLIP (ViT-B/32 and ViT-B/16)
-2. **EDA**: Dataset exploration, image/caption analysis, Karpathy split validation
-3. **Error Analysis**: Categorize baseline failures, identify improvable error types
-4. **Fine-tuning**: Three approaches to improve retrieval:
-   - Projection head (frozen CLIP + trainable MLP)
-   - Full CLIP fine-tuning (end-to-end)
-   - LoRA adapters (parameter-efficient)
-
-All fine-tuning uses **Hard Negative Mining** (VSE++ style) as the core improvement.
+All fine-tuning uses `HardNegativeInfoNCELoss` (in-batch InfoNCE with hard-negative weighting).
 
 ## Setup
 
@@ -20,36 +16,33 @@ All fine-tuning uses **Hard Negative Mining** (VSE++ style) as the core improvem
 uv sync
 ```
 
+`HF_TOKEN` in `.env` is needed if the gated Flickr30k mirror is used.
+
 ## Notebooks
 
-Run in order:
+Run in order — earlier notebooks produce artifacts later ones consume:
 
-| Notebook                       | Description                                   |
-| ------------------------------ | --------------------------------------------- |
-| `01_eda.ipynb`                 | Dataset EDA + Karpathy split analysis         |
-| `02_clip_baseline.ipynb`       | CLIP B/32 + B/16 zero-shot baseline, Recall@K |
-| `03_error_analysis.ipynb`      | Failure categorization, hardness analysis     |
-| `04_finetune_projection.ipynb` | Frozen CLIP + projection head training        |
-| `05_finetune_full.ipynb`       | Full CLIP fine-tuning                         |
-| `06_finetune_lora.ipynb`       | LoRA adapter fine-tuning                      |
+| Notebook                            | Purpose                                                        |
+| ----------------------------------- | -------------------------------------------------------------- |
+| `01_eda.ipynb`                      | Dataset EDA + Karpathy split sanity                            |
+| `02_clip_baseline_and_errors.ipynb` | Zero-shot CLIP B/32 & B/16, Recall@K, failure categorisation   |
+| `03_clip_finetuning.ipynb`          | Projection / Full / LoRA — comparison + hard-negative ablation |
+| `04_scratch_dual_encoders.ipynb`    | From-scratch ViT or CNN × word or BPE                          |
+| `05_analysis.ipynb`                 | Read-only cross-model comparison                               |
 
-## Streamlit App
+Execute a notebook in-place:
 
 ```bash
-uv run streamlit run app.py
+uv run jupyter nbconvert --to notebook --execute --inplace \
+    --ExecutePreprocessor.timeout=-1 notebooks/02_clip_baseline_and_errors.ipynb
 ```
 
-Pages: **Search** (text-to-image) | **Gallery** | **Compare** models | **Evaluation** (Recall@K) | **Explorer** (t-SNE)
+WandB tracking (project `nsiete-flickr30k-clip`) is required.
 
 ## Evaluation Metrics
 
-- **Recall@K** (K=1,5,10): fraction of queries where ground-truth image is in top-K
-- **Median Rank**: median rank of ground-truth image across all queries
-- **Mean Rank**: mean rank of ground-truth image
-
-## Dataset
-
-[Flickr30k](https://huggingface.co/datasets/lmms-lab/flickr30k) with [Karpathy splits](https://cs.stanford.edu/people/karpathy/deepimagesent/flickr30k.zip): ~29K train / 1K val / 1K test.
+- **Recall@K** (K=1, 5, 10) — fraction of queries with ground-truth image in top-K
+- **Median Rank**, **Mean Rank** of ground-truth across queries
 
 ## References
 

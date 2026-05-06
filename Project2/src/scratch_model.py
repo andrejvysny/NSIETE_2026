@@ -15,9 +15,6 @@ attention_mask=...)` so that `src.clip_embeddings.encode_*` and
 
 from __future__ import annotations
 
-import math
-from typing import Optional
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -55,7 +52,9 @@ def build_image_transform(train: bool) -> transforms.Compose:
 class PatchEmbed(nn.Module):
     """Conv-based image -> (B, num_patches, dim) embedding."""
 
-    def __init__(self, image_size: int = 224, patch: int = 16, in_chans: int = 3, dim: int = 192) -> None:
+    def __init__(
+        self, image_size: int = 224, patch: int = 16, in_chans: int = 3, dim: int = 192
+    ) -> None:
         super().__init__()
         if image_size % patch != 0:
             raise ValueError(f"image_size {image_size} not divisible by patch {patch}")
@@ -88,7 +87,7 @@ class TransformerBlock(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        key_padding_mask: Optional[torch.Tensor] = None,
+        key_padding_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         h = self.norm1(x)
         attn_out, _ = self.attn(h, h, h, key_padding_mask=key_padding_mask, need_weights=False)
@@ -108,7 +107,7 @@ class BasicBlock(nn.Module):
         self.bn1 = nn.BatchNorm2d(out_ch)
         self.conv2 = nn.Conv2d(out_ch, out_ch, 3, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(out_ch)
-        self.downsample: Optional[nn.Sequential] = None
+        self.downsample: nn.Sequential | None = None
         if stride != 1 or in_ch != out_ch:
             self.downsample = nn.Sequential(
                 nn.Conv2d(in_ch, out_ch, 1, stride=stride, bias=False),
@@ -260,7 +259,7 @@ class TextEncoderTransformer(nn.Module):
     def forward(
         self,
         input_ids: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
+        attention_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         T = input_ids.size(1)
         x = self.token_embed(input_ids) + self.pos_embed[:, :T]
@@ -307,7 +306,7 @@ class TextEncoderLSTM(nn.Module):
     def forward(
         self,
         input_ids: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
+        attention_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         x = self.dropout(self.token_embed(input_ids))
         out, _ = self.lstm(x)  # (B, T, 2*hidden)
@@ -346,7 +345,7 @@ class DualEncoder(nn.Module):
     def get_text_features(
         self,
         input_ids: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
+        attention_mask: torch.Tensor | None = None,
         **_: object,
     ) -> torch.Tensor:
         feats = self.text_encoder(input_ids, attention_mask=attention_mask)
@@ -356,7 +355,7 @@ class DualEncoder(nn.Module):
         self,
         pixel_values: torch.Tensor,
         input_ids: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
+        attention_mask: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         return (
             self.get_image_features(pixel_values=pixel_values),

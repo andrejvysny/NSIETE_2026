@@ -1,7 +1,5 @@
 import numpy as np
 
-from src.config import TOP_K_VALUES
-
 
 def text_to_image_search(
     text_embedding: np.ndarray,

@@ -21,11 +21,10 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional
 
 import torch
-
 
 PAD_TOKEN = "<pad>"
 CLS_TOKEN = "<cls>"
@@ -77,7 +76,7 @@ class WordTokenizer:
         min_freq: int = 3,
         max_vocab: int = 20000,
         max_length: int = 32,
-    ) -> "WordTokenizer":
+    ) -> WordTokenizer:
         from collections import Counter
 
         counter: Counter[str] = Counter()
@@ -136,7 +135,7 @@ class WordTokenizer:
         return out
 
     @classmethod
-    def load(cls, dirpath: Path) -> "WordTokenizer":
+    def load(cls, dirpath: Path) -> WordTokenizer:
         path = Path(dirpath) / "word_tokenizer.json"
         with open(path) as f:
             data = json.load(f)
@@ -174,7 +173,10 @@ class ClipBPETokenizer:
             max_length=self.max_length,
             return_tensors="pt",
         )
-        return {"input_ids": out["input_ids"].long(), "attention_mask": out["attention_mask"].long()}
+        return {
+            "input_ids": out["input_ids"].long(),
+            "attention_mask": out["attention_mask"].long(),
+        }
 
     # --- persistence ---
 
@@ -187,7 +189,7 @@ class ClipBPETokenizer:
         return out
 
     @classmethod
-    def load(cls, dirpath: Path) -> "ClipBPETokenizer":
+    def load(cls, dirpath: Path) -> ClipBPETokenizer:
         path = Path(dirpath) / "bpe_tokenizer.json"
         with open(path) as f:
             data = json.load(f)
@@ -197,7 +199,7 @@ class ClipBPETokenizer:
 # ─── Generic loader ───
 
 
-def load_tokenizer(model_name: str) -> "WordTokenizer | ClipBPETokenizer":
+def load_tokenizer(model_name: str) -> WordTokenizer | ClipBPETokenizer:
     """Resolve `scratch_*_word` or `scratch_*_bpe` -> the saved tokenizer."""
     from src.config import MODELS_DIR
 

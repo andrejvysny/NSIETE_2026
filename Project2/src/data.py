@@ -1,11 +1,11 @@
 import io
 import json
 import os
+import urllib.request
 import zipfile
 from pathlib import Path
 
 import numpy as np
-import urllib.request
 from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset, load_from_disk
 from dotenv import load_dotenv
 from PIL import Image

@@ -19,9 +19,7 @@ CLIP_MODELS = {
 DEFAULT_CLIP_MODEL = "clip-vit-b-32"
 
 # Karpathy splits
-KARPATHY_SPLIT_URL = (
-    "https://cs.stanford.edu/people/karpathy/deepimagesent/flickr30k.zip"
-)
+KARPATHY_SPLIT_URL = "https://cs.stanford.edu/people/karpathy/deepimagesent/flickr30k.zip"
 KARPATHY_JSON_FILENAME = "dataset_flickr30k.json"
 
 # Retrieval

@@ -1,8 +1,7 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from datasets import Dataset
 from sklearn.manifold import TSNE
-
 
 # ─── Text-to-Image Retrieval Visualization ───
 
@@ -25,7 +24,7 @@ def plot_retrieval_results(
 
     for i, (idx, score) in enumerate(results):
         axes[i].imshow(dataset[idx]["image"])
-        label = f"#{i+1} sim={score:.3f}"
+        label = f"#{i + 1} sim={score:.3f}"
 
         if ground_truth_idx is not None:
             is_correct = idx == ground_truth_idx
@@ -111,10 +110,14 @@ def plot_recall_comparison(
     for i, model in enumerate(models):
         values = [results[model].get(k, 0) * 100 for k in recall_keys]
         bars = ax.bar(x + i * width, values, width, label=model)
-        for bar, val in zip(bars, values):
+        for bar, val in zip(bars, values, strict=True):
             ax.text(
-                bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.5,
-                f"{val:.1f}", ha="center", va="bottom", fontsize=8,
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 0.5,
+                f"{val:.1f}",
+                ha="center",
+                va="bottom",
+                fontsize=8,
             )
 
     ax.set_xlabel("Metric")
@@ -145,8 +148,7 @@ def plot_rank_distribution(
     # Annotate key thresholds
     for k, color in [(1, "green"), (5, "orange"), (10, "red")]:
         frac = (ranks < k).mean() * 100
-        ax.axvline(k + 0.5, color=color, linestyle="--",
-                   label=f"R@{k} = {frac:.1f}%")
+        ax.axvline(k + 0.5, color=color, linestyle="--", label=f"R@{k} = {frac:.1f}%")
 
     ax.legend(fontsize=9)
     fig.tight_layout()
@@ -165,18 +167,14 @@ def plot_text_image_similarity_distribution(
 ) -> plt.Figure:
     """Separate histograms for positive pairs vs negative pairs."""
     # Positive pair similarities
-    pos_sims = np.sum(
-        text_embeddings * image_embeddings[ground_truth_indices], axis=1
-    )
+    pos_sims = np.sum(text_embeddings * image_embeddings[ground_truth_indices], axis=1)
 
     # Random negative pair similarities
     rng = np.random.default_rng(42)
     n_queries = len(text_embeddings)
     rand_text_idx = rng.integers(0, n_queries, size=n_negatives)
     rand_img_idx = rng.integers(0, len(image_embeddings), size=n_negatives)
-    neg_sims = np.sum(
-        text_embeddings[rand_text_idx] * image_embeddings[rand_img_idx], axis=1
-    )
+    neg_sims = np.sum(text_embeddings[rand_text_idx] * image_embeddings[rand_img_idx], axis=1)
 
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.hist(neg_sims, bins=100, alpha=0.6, label="Negative pairs", color="red", density=True)
@@ -256,22 +254,30 @@ def plot_tsne(
         labels_arr = [labels[i] for i in indices]
 
     unique_labels = sorted(set(labels_arr))
-    color_map = {l: i for i, l in enumerate(unique_labels)}
-    colors = [color_map[l] for l in labels_arr]
+    color_map = {label: i for i, label in enumerate(unique_labels)}
+    colors = [color_map[label] for label in labels_arr]
 
     fig, ax = plt.subplots(figsize=(12, 10))
     ax.scatter(
-        coords[:, 0], coords[:, 1],
-        c=colors, cmap="tab10", alpha=0.5, s=8,
+        coords[:, 0],
+        coords[:, 1],
+        c=colors,
+        cmap="tab10",
+        alpha=0.5,
+        s=8,
     )
 
     handles = [
         plt.Line2D(
-            [0], [0], marker="o", color="w",
-            markerfacecolor=plt.cm.tab10(color_map[l] / max(len(unique_labels), 1)),
-            markersize=8, label=l,
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            markerfacecolor=plt.cm.tab10(color_map[label] / max(len(unique_labels), 1)),
+            markersize=8,
+            label=label,
         )
-        for l in unique_labels
+        for label in unique_labels
     ]
     ax.legend(handles=handles, loc="upper right", fontsize=8)
     ax.set_title(title, fontsize=14)
@@ -356,7 +362,9 @@ def plot_error_analysis_grid(
 
         # Top-1 retrieved (wrong)
         axes[i][1].imshow(dataset[retrieved_idx]["image"])
-        axes[i][1].set_title(f"Retrieved (rank={case.get('gt_rank', '?')})", fontsize=9, color="red")
+        axes[i][1].set_title(
+            f"Retrieved (rank={case.get('gt_rank', '?')})", fontsize=9, color="red"
+        )
         axes[i][1].set_xticks([])
         axes[i][1].set_yticks([])
 
