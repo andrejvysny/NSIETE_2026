@@ -1,0 +1,113 @@
+=== START 02 2026-05-06T17:47:25+02:00 ===
+[NbConvertApp] Converting notebook notebooks/02_clip_baseline_and_errors.ipynb to notebook
+[NbConvertApp] Writing 13909975 bytes to notebooks/02_clip_baseline_and_errors.ipynb
+=== 02 EXIT 0 2026-05-06T17:48:43+02:00 ===
+=== START 03 2026-05-06T17:48:43+02:00 ===
+[NbConvertApp] Converting notebook notebooks/03_clip_finetuning.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/students/xvysnya/Project2/.venv/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/traitlets/config/application.py", line 1075, in launch_instance
+    app.start()
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/students/xvysnya/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/students/xvysnya/Project2/.venv/lib/python3.12/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+TRAINING_COMPLETE = True  # Set to False to skip efficiency table
+
+if TRAINING_COMPLETE:
+    import pandas as pd
+
+    efficiency_data = {
+        "Approach": [
+            "CLIP B/32 (baseline)",
+            "Projection Head",
+            "Full Fine-tune",
+            "LoRA (r=8)",
+        ],
+        "Trainable Params": ["0", "~400K", "~151M", "~600K"],
+        "% of Total":      ["0%", "~0.3%", "100%", "~0.4%"],
+        "Training Speed":  [
+            "N/A",
+            "Very fast (cached embeddings)",
+            "Slow (full forward/backward)",
+            "Medium (adapter gradients only)",
+        ],
+        "Forgetting Risk": ["None", "None", "High", "Low"],
+    }
+
+    r1_values = []
+    for approach in efficiency_data["Approach"]:
+        if approach in all_results:
+            r1_values.append(f"{all_results[approach]['R@1']:.1%}")
+        else:
+            r1_values.append("--")
+    efficiency_data["R@1"] = r1_values
+
+    df = pd.DataFrame(efficiency_data)
+    display(df.style.hide(axis="index").set_properties(**{"text-align": "left"}))
+
+------------------
+
+
+[31m---------------------------------------------------------------------------[39m
+[31mTypeError[39m                                 Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[30][39m[32m, line 33[39m
+[32m     29[39m             r1_values.append([33m"--"[39m)
+[32m     30[39m     efficiency_data[[33m"R@1"[39m] = r1_values
+[32m     31[39m 
+[32m     32[39m     df = pd.DataFrame(efficiency_data)
+[32m---> [39m[32m33[39m     display(df.style.hide(axis=[33m"index"[39m).set_properties(**{[33m"text-align"[39m: [33m"left"[39m}))
+
+[31mTypeError[39m: 'str' object is not callable
+
+=== 03 EXIT 0 2026-05-06T17:56:42+02:00 ===
+=== START 04 2026-05-06T17:56:42+02:00 ===
+[NbConvertApp] Converting notebook notebooks/04_scratch_dual_encoders.ipynb to notebook
+[NbConvertApp] Writing 577199 bytes to notebooks/04_scratch_dual_encoders.ipynb
+=== 04 EXIT 0 2026-05-06T18:28:12+02:00 ===
+=== ALL DONE 2026-05-06T18:28:12+02:00 (02=0 03=0 04=0) ===

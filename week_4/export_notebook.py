@@ -1,0 +1,59 @@
+"""Execute notebook with Plotly rendered as static images, export HTML + PDF."""
+import nbformat
+from nbconvert.preprocessors import ExecutePreprocessor
+from nbconvert import HTMLExporter, WebPDFExporter
+import os
+import sys
+
+NB_NAME = sys.argv[1] if len(sys.argv) > 1 else "Task_3_optimization.ipynb"
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+# Force plotly to render as static images in notebook
+os.environ["PLOTLY_RENDERER"] = "png"
+
+nb = nbformat.read(NB_NAME, as_version=4)
+
+# Inject plotly default renderer at the top
+renderer_code = 'import plotly.io as pio; pio.renderers.default = "png"'
+renderer_cell = nbformat.v4.new_code_cell(source=renderer_code)
+renderer_cell.metadata["tags"] = ["injected"]
+nb.cells.insert(0, renderer_cell)
+
+ep = ExecutePreprocessor(timeout=300, kernel_name="python3")
+ep.preprocess(nb, {"metadata": {"path": "."}})
+
+# Remove injected cell before export
+nb.cells.pop(0)
+
+base = NB_NAME.rsplit(".", 1)[0]
+
+# HTML export
+html_exp = HTMLExporter()
+html_exp.embed_images = True
+html_body, _ = html_exp.from_notebook_node(nb)
+with open(f"{base}.html", "w") as f:
+    f.write(html_body)
+print(f"HTML exported: {base}.html")
+
+# PDF export via webpdf (playwright/chromium)
+try:
+    pdf_exp = WebPDFExporter()
+    pdf_exp.embed_images = True
+    pdf_body, _ = pdf_exp.from_notebook_node(nb)
+    with open(f"{base}.pdf", "wb") as f:
+        f.write(pdf_body)
+    print(f"PDF exported: {base}.pdf")
+except Exception as e:
+    print(f"PDF export failed: {e}")
+    print("Trying HTML-to-PDF fallback via playwright...")
+    from playwright.sync_api import sync_playwright
+    html_path = os.path.abspath(f"{base}.html")
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.goto(f"file://{html_path}")
+        page.pdf(path=f"{base}.pdf", format="A4",
+                 print_background=True, margin={"top": "1cm", "bottom": "1cm",
+                                                 "left": "1cm", "right": "1cm"})
+        browser.close()
+    print(f"PDF exported (fallback): {base}.pdf")
